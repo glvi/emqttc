@@ -389,7 +389,7 @@ init([Name, Recipient, MqttOpts, TcpOpts]) ->
 
     process_flag(trap_exit, true),
 
-    Logger = gen_logger:new(get_value(logger, MqttOpts, {console, debug})),
+    {gen_logger, Logger, _} = gen_logger:new(get_value(logger, MqttOpts, {console, debug})),
 
     MqttOpts1 = proplists:delete(logger, MqttOpts),
 

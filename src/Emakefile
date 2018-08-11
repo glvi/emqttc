@@ -1,2 +1,0 @@
-%% -*- mode: erlang; coding: utf-8; indent-tabs-mode: nil; -*-
-{['emqttc','emqttc_keepalive','emqttc_message','emqttc_opts','emqttc_packet','emqttc_parser','emqttc_protocol','emqttc_reconnector','emqttc_serialiser','emqttc_socket','emqttc_topic'],[{i,"../include"},{outdir,"../../../../build/prototype/emqttc/ebin"}]}.
