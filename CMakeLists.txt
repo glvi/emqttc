@@ -38,3 +38,16 @@ add_custom_target(EmqttClient
   COMMAND_EXPAND_LISTS)
 add_dependencies(EmqttClient ErlangOTP)
 set(URBANATM_EMQTTC_OBJECTS ${EMQTTC_OBJECTS} CACHE INTERNAL "UrbanATM Erlang EMQTTC objects" FORCE)
+add_custom_target(DialyzeEmqttClient
+  COMMAND ${DIALYZER_PROGRAM}
+          --fullpath
+          --plt ${DIALYZER_PLT}
+          -I ${CMAKE_CURRENT_SOURCE_DIR}/include
+          -pa ${gen_logger_BINARY_DIR}/ebin
+          -pa ${CMAKE_CURRENT_BINARY_DIR}/ebin
+          --src ${CMAKE_CURRENT_SOURCE_DIR}/src
+  DEPENDS ${DIALYZER_PLT}
+  )
+add_dependencies(DialyzeEmqttClient
+  DialyzerPlt
+  EmqttClient)
