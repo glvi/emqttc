@@ -1,0 +1,2 @@
+%% -*- mode: erlang; coding: utf-8; indent-tabs-mode: nil; -*-
+{[@emqttc_modules@],[{i,"@emqttc_include_dir@"},{outdir,"@emqttc_binary_dir@"}]}.
