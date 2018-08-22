@@ -32,7 +32,7 @@ add_custom_target(EmqttClient
   DEPENDS    ${EMQTTC_SOURCES}
   COMMAND    ${CMAKE_COMMAND} -E make_directory ${emqttc_binary_dir}
   COMMAND    ${CMAKE_COMMAND} -E copy_directory ${emqttc_include_dir} ${CMAKE_CURRENT_BINARY_DIR}
-  COMMAND    ${ERLANG_PROGRAM} -sasl errlog_type error -make
+  COMMAND    ${ERLANG_PROGRAM} -pa ${gen_logger_BINARY_DIR}/ebin -sasl errlog_type error -make
   WORKING_DIRECTORY ${emqttc_source_dir}
   VERBATIM
   COMMAND_EXPAND_LISTS)
