@@ -389,7 +389,7 @@ init([Name, Recipient, MqttOpts, TcpOpts]) ->
     process_flag(trap_exit, true),
 
     case get_value(client_id, MqttOpts) of
-        undefined -> ?LOG_WARNING("ClientId is NULL!");
+        undefined -> ?warn("ClientId is NULL!", []);
         _ -> ok
     end,
 
@@ -470,7 +470,7 @@ waiting_for_connack(?CONNACK_PACKET(?CONNACK_ACCEPT), State = #state{
                 proto_state = ProtoState,
                 keepalive = KeepAlive,
                 connack_tref = TRef}) ->
-    ?LOG_INFO("[Client ~ts] RECV: CONNACK_ACCEPT", [Name]),
+    ?info("[Client ~s] RECV: CONNACK_ACCEPT", [Name]),
 
     %% Cancel connack timer
     if
@@ -510,11 +510,11 @@ waiting_for_connack(?CONNACK_PACKET(?CONNACK_ACCEPT), State = #state{
 
 waiting_for_connack(?CONNACK_PACKET(ReturnCode), State = #state{name = Name}) ->
     ErrConnAck = emqttc_packet:connack_name(ReturnCode),
-    ?LOG_DEBUG("[Client ~ts] RECV: ~ts", [Name, ErrConnAck]),
+    ?debug("[Client ~s] RECV: ~s", [Name, ErrConnAck]),
     {stop, {shutdown, {connack_error, ErrConnAck}}, State};
 
 waiting_for_connack(Packet = ?PACKET(_Type), State = #state{name = Name}) ->
-    ?LOG_ERROR("[Client ~ts] RECV: ~ts, when waiting for connack!", [Name, emqttc_packet:dump(Packet)]),
+    ?error("[Client ~s] RECV: ~s, when waiting for connack!", [Name, emqttc_packet:dump(Packet)]),
     next_state(waiting_for_connack, State);
 
 waiting_for_connack(Event = {publish, _Msg}, State) ->
@@ -530,11 +530,11 @@ waiting_for_connack(disconnect, State=#state{receiver = Receiver, proto_state = 
     {stop, normal, State#state{socket = undefined, receiver = undefined}};
 
 waiting_for_connack({timeout, TRef, connack}, State = #state{name = Name, connack_tref = TRef}) ->
-    ?LOG_ERROR("[Client ~ts] CONNACK Timeout!", [Name]),
+    ?error("[Client ~s] CONNACK Timeout!", [Name]),
     {stop, {shutdown, connack_timeout}, State};
 
 waiting_for_connack(Event, State = #state{name = Name}) ->
-    ?LOG_WARNING("[Client ~ts] Unexpected Event: ~tp, when waiting for connack!", [Name, Event]),
+    ?warn("[Client ~s] Unexpected Event: ~p, when waiting for connack!", [Name, Event]),
     {next_state, waiting_for_connack, State}.
 
 %%------------------------------------------------------------------------------
@@ -543,7 +543,7 @@ waiting_for_connack(Event, State = #state{name = Name}) ->
 %% @end
 %%------------------------------------------------------------------------------
 waiting_for_connack(Event, _From, State = #state{name = Name}) ->
-    ?LOG_ERROR("[Client ~ts] Event when waiting_for_connack: ~tp", [Name, Event]),
+    ?error("[Client ~s] Event when waiting_for_connack: ~p", [Name, Event]),
     {reply, {error, waiting_for_connack}, waiting_for_connack, State}.
 
 %%------------------------------------------------------------------------------
@@ -581,7 +581,7 @@ connected({subscribe, SubPid, Topics}, State = #state{subscribers = Subscribers,
                             Qos =:= OldQos ->
                                 Map;
                             true ->
-                                ?LOG_ERROR("Subscribe topic '~ts' with different qos: old=~tp, new=~tp", [Topic, OldQos, Qos]),
+                                ?error("Subscribe topic '~s' with different qos: old=~p, new=~p", [Topic, OldQos, Qos]),
                                 maps:put(Topic, {Qos, Subs}, Map)
                             end;
                         false ->
@@ -645,12 +645,12 @@ connected(disconnect, State=#state{receiver = Receiver, proto_state = ProtoState
     {stop, normal, State#state{socket = undefined, receiver = undefined}};
 
 connected(Packet = ?PACKET(_Type), State = #state{name = Name}) ->
-    ?LOG_DEBUG("[Client ~ts] RECV: ~ts", [Name, emqttc_packet:dump(Packet)]),
+    % ?debug("[Client ~s] RECV: ~s", [Name, emqttc_packet:dump(Packet)]),
     {ok, NewState} = received(Packet, State),
     next_state(connected, NewState);
 
 connected(Event, State = #state{name = Name}) ->
-    ?LOG_WARNING("[Client ~ts] Unexpected Event: ~tp, when broker connected!", [Name, Event]),
+    ?warn("[Client ~s] Unexpected Event: ~p, when broker connected!", [Name, Event]),
     next_state(connected, State).
 
 %%------------------------------------------------------------------------------
@@ -697,7 +697,7 @@ connected({Pid, ping}, From, State = #state{ping_reqs = PingReqs, proto_state = 
     {next_state, connected, State#state{ping_reqs = PingReqs1}};
 
 connected(Event, _From, State = #state{name = Name}) ->
-    ?LOG_ERROR("[Client ~ts] Unexpected Sync Event when connected: ~tp", [Name, Event]),
+    ?error("[Client ~s] Unexpected Sync Event when connected: ~p", [Name, Event]),
     {reply, {error, unexpected_event}, connected, State}.
 
 %%------------------------------------------------------------------------------
@@ -716,7 +716,7 @@ disconnected(disconnect, State) ->
     {stop, normal, State};
 
 disconnected(Event, State = #state{name = Name}) ->
-    ?LOG_ERROR("[Client ~ts] Unexpected Event: ~tp, when disconnected from broker!", [Name, Event]),
+    ?error("[Client ~s] Unexpected Event: ~p, when disconnected from broker!", [Name, Event]),
     next_state(disconnected, State).
 
 %%------------------------------------------------------------------------------
@@ -725,7 +725,7 @@ disconnected(Event, State = #state{name = Name}) ->
 %% @end
 %%------------------------------------------------------------------------------
 disconnected(Event, _From, State = #state{name = Name}) ->
-    ?LOG_ERROR("Client ~ts] Unexpected Sync Event: ~tp, when disconnected from broker!", [Name, Event]),
+    ?error("Client ~s] Unexpected Sync Event: ~p, when disconnected from broker!", [Name, Event]),
     {reply, {error, disonnected}, disconnected, State}.
 
 %%------------------------------------------------------------------------------
@@ -745,13 +745,13 @@ disconnected(Event, _From, State = #state{name = Name}) ->
     {stop, Reason :: term(), NewStateData :: #state{}}).
 
 handle_event({frame_error, Error}, _StateName, State = #state{name = Name}) ->
-    ?LOG_ERROR("[Client ~ts] Frame Error: ~tp", [Name, Error]),
+    ?error("[Client ~s] Frame Error: ~p", [Name, Error]),
     {stop, {shutdown, {frame_error, Error}}, State};
 
 handle_event({connection_lost, Reason}, StateName, State = #state{recipient = Recipient, name = Name, keepalive = KeepAlive, connack_tref = TRef})
         when StateName =:= connected; StateName =:= waiting_for_connack ->
 
-    ?LOG_WARNING("[Client ~ts] Connection lost for: ~tp", [Name, Reason]),
+    ?warn("[Client ~s] Connection lost for: ~p", [Name, Reason]),
 
     %% cancel connack timer first, if connection lost when waiting for connack.
     case {StateName, TRef} of
@@ -769,7 +769,7 @@ handle_event({connection_lost, Reason}, StateName, State = #state{recipient = Re
     try_reconnect(Reason, State#state{socket = undefined, connack_tref = TRef});
 
 handle_event(Event, StateName, State = #state{name = Name}) ->
-    ?LOG_WARNING("[Client ~ts] Unexpected Event when ~ts: ~tp", [Name, StateName, Event]),
+    ?warn("[Client ~s] Unexpected Event when ~s: ~p", [Name, StateName, Event]),
     {next_state, StateName, State}.
 
 %%------------------------------------------------------------------------------
@@ -850,7 +850,7 @@ handle_info({'EXIT', Receiver, Reason}, _StateName,
             State = #state{name = Name, receiver = Receiver,
                            keepalive = KeepAlive}) ->
     %% event occured when receiver error
-    ?LOG_ERROR("[Client ~ts] receiver exit: ~tp", [Name, Reason]),
+    ?error("[Client ~s] receiver exit: ~p", [Name, Reason]),
     emqttc_keepalive:cancel(KeepAlive),
     try_reconnect({receiver, Reason}, State#state{receiver = undefined, socket = undefined});
 
@@ -859,7 +859,7 @@ handle_info(Down = {'DOWN', MonRef, process, Pid, _Why}, StateName,
                            subscribers = Subscribers,
                            pubsub_map  = PubSubMap,
                            ping_reqs = PingReqs}) ->
-    ?LOG_WARNING("[Client ~ts] Process DOWN: ~tp", [Name, Down]),
+    ?warn("[Client ~s] Process DOWN: ~p", [Name, Down]),
 
     %% ping?
     PingReqs1 = lists:keydelete(MonRef, 2, PingReqs),
@@ -888,7 +888,7 @@ handle_info({inet_reply, Socket, ok}, StateName, State = #state{socket = Socket}
     next_state(StateName, State);
 
 handle_info(Info, StateName, State = #state{name = Name}) ->
-    ?LOG_ERROR("[Client ~ts] Unexpected Info when ~ts: ~tp", [Name, StateName, Info]),
+    ?error("[Client ~s] Unexpected Info when ~s: ~p", [Name, StateName, Info]),
     {next_state, StateName, State}.
 
 %%------------------------------------------------------------------------------
@@ -940,21 +940,21 @@ connect(State = #state{name = Name,
                        transport = Transport,
                        tcp_opts = TcpOpts,
                        ssl_opts = SslOpts}) ->
-    ?LOG_INFO("[Client ~ts]: connecting to ~ts:~tp", [Name, Host, Port]),
+    ?info("[Client ~s]: connecting to ~s:~p", [Name, Host, Port]),
     case emqttc_socket:connect(self(), Transport, Host, Port, TcpOpts, SslOpts) of
         {ok, Socket, Receiver} ->
             ProtoState1 = emqttc_protocol:set_socket(ProtoState, Socket),
             emqttc_protocol:connect(ProtoState1),
             KeepAlive = emqttc_keepalive:new({Socket, send_oct}, KeepAliveTime, {keepalive, timeout}),
             TRef = gen_fsm:start_timer(ConnAckTimeout*1000, connack),
-            ?LOG_INFO("[Client ~ts] connected with ~ts:~tp", [Name, Host, Port]),
+            ?info("[Client ~s] connected with ~s:~p", [Name, Host, Port]),
             {next_state, waiting_for_connack, State#state{socket = Socket,
                                                           receiver = Receiver,
                                                           keepalive = KeepAlive,
                                                           connack_tref = TRef,
                                                           proto_state = ProtoState1}};
         {error, Reason} ->
-            ?LOG_INFO("[Client ~ts] connection failure: ~tp", [Name, Reason]),
+            ?info("[Client ~s] connection failure: ~p", [Name, Reason]),
             try_reconnect(Reason, State)
     end.
 
@@ -962,12 +962,12 @@ try_reconnect(Reason, State = #state{reconnector = undefined}) ->
     {stop, {shutdown, Reason}, State};
 
 try_reconnect(Reason, State = #state{name = Name, reconnector = Reconnector}) ->
-    ?LOG_INFO("[Client ~ts] try reconnecting...", [Name]),
+    ?info("[Client ~s] try reconnecting...", [Name]),
     case emqttc_reconnector:execute(Reconnector, {reconnect, timeout}) of
     {ok, Reconnector1} ->
         {next_state, disconnected, State#state{reconnector = Reconnector1}};
     {stop, Error} ->
-        ?LOG_ERROR("[Client ~ts] reconect error: ~tp", [Name, Error]),
+        ?error("[Client ~s] reconect error: ~p", [Name, Error]),
         {stop, {shutdown, Reason}, State}
     end.
 
@@ -1063,7 +1063,7 @@ reply_timeout({Ack, ReqId}, State=#state{inflight_reqs = InflightReqs}) ->
             gen_fsm:reply(From, {error, ack_timeout}),
             maps:remove(ReqId, InflightReqs);
        error ->
-            ?LOG_ERROR("~ts timeout, cannot find inflight reqid: ~tp", [Ack, ReqId]),
+            ?error("~s timeout, cannot find inflight reqid: ~p", [Ack, ReqId]),
             InflightReqs
     end,
     State#state{inflight_reqs = InflightReqs1}.

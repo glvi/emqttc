@@ -8,5 +8,8 @@
              emqttc_reconnector, emqttc_serialiser, emqttc_socket,
              emqttc_topic]},
   {registered, []},
-  {applications, [kernel, stdlib]}
- ]}.
+  {applications, [kernel,
+                  stdlib]},
+  {included_applications, []},
+  {env, []}
+]}.
