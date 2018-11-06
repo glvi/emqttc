@@ -36,7 +36,7 @@ add_custom_target(EmqttClient
   WORKING_DIRECTORY ${emqttc_source_dir}
   VERBATIM
   COMMAND_EXPAND_LISTS)
-add_dependencies(EmqttClient ErlangOTP)
+#add_dependencies(EmqttClient ErlangOTP)
 set(URBANATM_EMQTTC_OBJECTS ${EMQTTC_OBJECTS} CACHE INTERNAL "UrbanATM Erlang EMQTTC objects" FORCE)
 add_custom_target(DialyzeEmqttClient
   COMMAND ${DIALYZER_PROGRAM}
